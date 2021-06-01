@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 class ToClientData:
     def __init__(self, data, label,
                  number_of_clients=10,
+                 data_type='csv',
                  is_iid=False,
                  data_sample_fraction=0.1,
                  min_user_number=1,
@@ -19,6 +20,7 @@ class ToClientData:
                  split_type='user'):
 
         self.data = data
+        self.data_type = data_type
         self.label = label
         self.selected_feature = label
         self.client_no = number_of_clients
@@ -70,9 +72,12 @@ class ToClientData:
         min_user_number = kwargs.get('min_user_number', self.min_user_number)
         max_user_number = kwargs.get('max_user_number', self.max_user_number)
 
-        data, label = self.__select_feature(selected_feature,
-                                   min_seen_labels, max_seen_labels,
-                                   min_user_number, max_user_number)
+        if kwargs.get('data_type', self.type) == 'image':
+            data, label = self.__select_feature_image(min_user_number, max_user_number)
+        else:
+            data, label = self.__select_feature_csv(selected_feature,
+                                                    min_seen_labels, max_seen_labels,
+                                                    min_user_number, max_user_number)
 
         return data, label
 
@@ -83,7 +88,31 @@ class ToClientData:
         else:
             return self._niid(**kwargs)
 
-    def __select_feature(self, feature_column, min_seen_labels, max_seen_labels, min_user_number, max_user_number):
+    def __select_feature_image(self, min_user_number, max_user_number):
+
+        remained_data = self.data
+        remained_label = self.label
+
+        grouped_data = []
+        grouped_data_label = []
+
+        while remained_data.size:
+            rng = randrange(min_user_number, max_user_number)
+            user_size = len(remained_data) if rng > len(remained_data) else rng
+
+            self.__shuffle()
+            random_selected_data = remained_data[:user_size]
+            random_selected_label = remained_label[:user_size]
+
+            grouped_data.append(random_selected_data)
+            grouped_data_label.append(random_selected_label)
+
+            remained_data = remained_data[user_size:]
+            remained_label = remained_label[user_size:]
+
+        return grouped_data, grouped_data_label
+
+    def __select_feature_csv(self, feature_column, min_seen_labels, max_seen_labels, min_user_number, max_user_number):
 
         unique_features = list(set([item[feature_column] for item in self.data]))
         max_feature_len = len(unique_features)
@@ -119,20 +148,20 @@ class ToClientData:
 
         return grouped_data, grouped_data_label
 
-    def split_data(self,  x, y, **kwargs):
-
+    def split_data(self, x, y, **kwargs):
+        train_data_fraction = kwargs.get('train_data_fraction', self.train_data_fraction)
         if kwargs.get('type', self.type) == 'sample':
-            return self._sample_split(x,y)
+            return self._sample_split(x, y, train_data_fraction)
         else:
-            return self._user_split()
+            return self._user_split(train_data_fraction)
 
-    def _user_split(self):
+    def _user_split(self, train_data_fraction):
         rng_seed = (self.random_split_seed if (self.random_split_seed is not None and self.random_split_seed >= 0)
                     else int(time.time()))
         rng = random.Random(rng_seed)
         # randomly sample from user_files to pick training set users
         num_users = self.client_no
-        num_train_users = int(self.train_data_fraction * num_users)
+        num_train_users = int(train_data_fraction * num_users)
         indices = [i for i in range(num_users)]
         train_indices = rng.sample(indices, num_train_users)
         train_blist = [False for i in range(num_users)]
@@ -153,6 +182,6 @@ class ToClientData:
 
         return train_user_files, test_user_files, train_labels, test_labels
 
-    def _sample_split(self, x, y):
-        x_train, x_test , y_train, y_test = train_test_split(x,y, test_size=self.train_data_fraction)
-        return x_train, x_test , y_train, y_test
+    def _sample_split(self, x, y, train_data_fraction):
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=train_data_fraction)
+        return x_train, x_test, y_train, y_test

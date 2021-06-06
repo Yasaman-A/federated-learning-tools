@@ -18,6 +18,7 @@ class Converter:
     def _read_image_(self) -> object:
         img_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255, rotation_range=20)
         images, labels = next(img_gen.flow_from_directory(self.path))
+        # print(labels)
 
         return images, labels
 

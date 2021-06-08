@@ -98,7 +98,6 @@ with open(os.path.join(output_path, 'y_test.txt'), "w") as file1:
 ```
 
 # Footnotes
----
 
 - <b id="f1">1</b>
   * In the i.i.d. sampling scenario, each datapoint is equally likely to be sampled. Thus, all users have the same underlying distribution of data.

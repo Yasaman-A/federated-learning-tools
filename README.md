@@ -97,6 +97,7 @@ with open(os.path.join(output_path, 'y_test.txt'), "w") as file1:
 
 ```
 
+# Footnotes
 ---
 
 - <b id="f1">1</b>

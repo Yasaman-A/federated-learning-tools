@@ -11,7 +11,7 @@ class ToClientData:
         self.data_type = 'csv'
         self.label = label
         self.selected_feature = label
-        self.type = False
+        self.type = 'niid'
         self.client_no = 10
         self.data_sample_fraction = 0.1
         self.min_user_number = 1

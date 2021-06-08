@@ -1,5 +1,16 @@
 # Documentation
 
+## Installation
+
+To install the required packages, do the following steps:
+
+  1. Go to the directory where requirements.txt is located.
+  2. Activate your virtualenv.
+  3. Run following command in your shell: 
+    ```
+    pip install -r requirements.txt
+    ```
+
 ## 1. Converter
 
 In the `converter.py` file, we defined a class of converter, which requires `data_type` and `path`.

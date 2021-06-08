@@ -96,6 +96,12 @@ with open(os.path.join(output_path, 'y_test.txt'), "w") as file1:
     file1.write("\n".join(str(item) for item in y_test))
 
 ```
+### 5. Running on different datasets
+
+You can run the code with different datasets, that can be found here:
+
+https://github.com/TalwalkarLab/leaf/tree/master/data
+
 
 # Footnotes
 

@@ -2,6 +2,7 @@ import random
 from random import randrange
 import time
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 
 class ToClientData:
@@ -79,10 +80,11 @@ class ToClientData:
                                      'is less than total number of clients specified:', number_of_clients)
                 else:
                     data, label = self.__select_feature_image_client(min_user_number, max_user_number,
-                                                                     selected_feature, number_of_clients)
+                                                                     number_of_clients,
+                                                                     min_seen_labels, max_seen_labels)
             else:
                 data, label = self.__select_feature_image_no_client(min_user_number, max_user_number,
-                                                                    selected_feature)
+                                                                    min_seen_labels, max_seen_labels)
         else:
             if number_of_clients:
                 if number_of_clients > len(self.data):
@@ -106,48 +108,75 @@ class ToClientData:
         else:
             return self._niid(**kwargs)
 
-    def __select_feature_image_no_client(self, min_user_number, max_user_number, selected_feature):
-        remained_data = self.data
-        remained_label = self.label
+    def __select_feature_image_no_client(self, min_user_number, max_user_number, min_seen_labels, max_seen_labels):
 
-        # This is where needs revise, for selecting specific labels for images
-        # remained_data = np.array(dt for i, dt in enumerate(remained_data) if remained_label[i][selected_feature] == 1)
+        unique_features = self.label
+        max_feature_len = len(self.label[0])
+
+        if min_seen_labels > min(max_seen_labels, max_feature_len):
+            raise ValueError(
+                f'Total number of unique features: ({max_feature_len}) is more'
+                f' than what is set for min seen labels: ({min_seen_labels})')
+        else:
+            unique_feature_size = random.randint(min_seen_labels, min(max_seen_labels, max_feature_len))
 
         grouped_data = []
         grouped_data_label = []
+        remained_data = self.data
 
         while remained_data.size:
-            rng = randrange(min_user_number, max_user_number)
-            user_size = len(remained_data) if rng > len(remained_data) else rng
+            random_selected_features = random.sample(range(0, max_feature_len), unique_feature_size)
 
-            self.__shuffle(remained_data, remained_label)
-            random_selected_data = remained_data[:user_size]
-            random_selected_label = remained_label[:user_size]
+            selected_data = [x for j in random_selected_features for i, x in enumerate(self.data) if
+                             unique_features[i][j] == 1]
+
+            selected_label = [unique_features[i] for j in random_selected_features for i, x in enumerate(self.data) if
+                              unique_features[i][j] == 1]
+
+            rng = randrange(min_user_number, max_user_number)
+            user_size = len(selected_data) if rng > len(selected_data) else rng
+
+            idx = np.random.choice(np.arange(len(selected_data)), user_size, replace=False)
+            random_selected_data = [selected_data[ind] for ind in idx]
+            random_selected_labels = [selected_label[ind] for ind in idx]
 
             grouped_data.append(random_selected_data)
-            grouped_data_label.append(random_selected_label)
+            grouped_data_label.append(random_selected_labels)
 
-            remained_data = remained_data[user_size:]
-            remained_label = remained_label[user_size:]
-
+            remained_data = remained_data[np.isin(remained_data, random_selected_data, invert=True)]
         return grouped_data, grouped_data_label
 
     def __select_feature_image_client(self, min_user_number, max_user_number,
-                                      selected_feature, number_of_clients):
+                                      number_of_clients, min_seen_labels, max_seen_labels):
         remained_data = self.data
         remained_label = self.label
 
-        # This is where needs revise, for selecting specific labels for images
-        # remained_data = np.array(dt for i, dt in enumerate(remained_data) if remained_label[i][selected_feature] == 1)
+        unique_features = self.label
+        max_feature_len = len(self.label[0])
+
+        if min_seen_labels > min(max_seen_labels, max_feature_len):
+            raise ValueError(
+                f'Total number of unique features: ({max_feature_len}) is more'
+                f' than what is set for min seen labels: ({min_seen_labels})')
+        else:
+            unique_feature_size = random.randint(min_seen_labels, min(max_seen_labels, max_feature_len))
 
         grouped_data = []
         grouped_data_label = []
 
         random_selected_data = []
-        random_selected_label = []
+        random_selected_labels = []
 
         g_size = number_of_clients
         while remained_data.size and g_size > 0:
+
+            random_selected_features = random.sample(range(0, max_feature_len), unique_feature_size)
+
+            selected_data = [x for j in random_selected_features for i, x in enumerate(self.data) if
+                             unique_features[i][j] == 1]
+
+            selected_label = [unique_features[i] for j in random_selected_features for i, x in enumerate(self.data) if
+                              unique_features[i][j] == 1]
 
             rng = randrange(min_user_number, min(max_user_number, number_of_clients))
             user_size = len(remained_data) if rng > len(remained_data) else rng
@@ -156,18 +185,22 @@ class ToClientData:
 
             if g_size != 1:
 
-                random_selected_data = remained_data[:user_size]
-                random_selected_label = remained_label[:user_size]
+                rng = randrange(min_user_number, max_user_number)
+                user_size = len(selected_data) if rng > len(selected_data) else rng
+
+                idx = np.random.choice(np.arange(len(selected_data)), user_size, replace=False)
+                random_selected_data = [selected_data[ind] for ind in idx]
+                random_selected_labels = [selected_label[ind] for ind in idx]
 
             elif g_size == 1:
-                random_selected_data = remained_data
-                random_selected_label = remained_label
+                idx = np.random.choice(np.arange(len(selected_data)), user_size, replace=False)
+                random_selected_data = [selected_data[ind] for ind in idx]
+                random_selected_labels = [selected_label[ind] for ind in idx]
 
             grouped_data.append(random_selected_data)
-            grouped_data_label.append(random_selected_label)
+            grouped_data_label.append(random_selected_labels)
 
-            remained_data = remained_data[user_size:]
-            remained_label = remained_label[user_size:]
+            remained_data = remained_data[np.isin(remained_data, random_selected_data, invert=True)]
             g_size -= 1
 
         return grouped_data, grouped_data_label

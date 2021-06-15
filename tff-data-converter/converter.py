@@ -3,6 +3,8 @@ import os
 import glob
 import itertools
 import csv
+import tensorflow_federated as tff
+import collections
 
 class Converter:
     def __init__(self, data_type, path):
@@ -18,7 +20,6 @@ class Converter:
     def _read_image_(self) -> object:
         img_gen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255, rotation_range=20)
         images, labels = next(img_gen.flow_from_directory(self.path))
-        # print(labels)
 
         return images, labels
 
@@ -74,3 +75,23 @@ class Converter:
             return self._read_folder_() if os.path.isdir(self.path) else self._read_csv_()
         else:
             raise ValueError(f'Given path: {self.path} is not a csv file or a folder, check the path and try again.')
+
+    def convert_to_client_data(self, data, labels, number_of_clients):
+        client_train_dataset = collections.OrderedDict()
+        for i in range(1, number_of_clients):
+            client_name = "client_" + str(i)
+            data = collections.OrderedDict((('label', labels), ('data', data)))
+            client_train_dataset[client_name] = data
+
+        train_dataset = tff.simulation.datasets.TestClientData(client_train_dataset)  # for newer versions
+
+        # # how to reach the client id data and labels
+        # print(train_dataset.client_ids[0])
+        # example_dataset = train_dataset.create_tf_dataset_for_client(
+        #     train_dataset.client_ids[0])
+        #
+        # example_element = next(iter(example_dataset))
+        # print(example_element['label'].numpy())
+        # print(example_element['data'].numpy())
+
+        return train_dataset

@@ -55,7 +55,55 @@ federated_train_data = make_federated_data(dataset, sample_clients)
 print('Number of client datasets: {l}'.format(l=len(federated_train_data)))
 print('First dataset: {d}'.format(d=federated_train_data[1]))
 
-#
+def create_keras_model():
+  return tf.keras.models.Sequential([
+      tf.keras.layers.InputLayer(input_shape=(reduce(lambda x, y: x*y, data.shape),)),
+      tf.keras.layers.Dense(10, kernel_initializer='zeros'),
+      tf.keras.layers.Softmax(),
+  ])
+
+example_dataset = dataset.create_tf_dataset_for_client(
+    dataset.client_ids[0])
+
+example_element = next(iter(example_dataset))
+
+example_element['label'].numpy()
+
+preprocessed_example_dataset = preprocess(example_dataset)
+
+sample_batch = tf.nest.map_structure(lambda x: x.numpy(),
+                                     next(iter(preprocessed_example_dataset)))
+
+def model_fn():
+  # We _must_ create a new model here, and _not_ capture it from an external
+  # scope. TFF will call this within different graph contexts.
+  keras_model = create_keras_model()
+  return tff.learning.from_keras_model(
+      keras_model,
+      input_spec=preprocessed_example_dataset.element_spec,
+      loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+      metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+
+iterative_process = tff.learning.build_federated_averaging_process(
+    model_fn,
+    client_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=0.02),
+    # server_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=1.0)
+)
+
+# str(iterative_process.initialize.type_signature)
+
+state = iterative_process.initialize()
+
+state, metrics = iterative_process.next(state, federated_train_data)
+print('round  1, metrics={}'.format(metrics))
+
+NUM_ROUNDS = 11
+for round_num in range(2, NUM_ROUNDS):
+  state, metrics = iterative_process.next(state, federated_train_data)
+  print('round {:2d}, metrics={}'.format(round_num, metrics))
+
+
+
 # # how to reach the client id data and labels
 # print(federated_train_data.client_ids[0])
 # example_dataset = federated_train_data.create_tf_dataset_for_client(

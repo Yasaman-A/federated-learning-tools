@@ -1,28 +1,16 @@
 # Documentation
 
-## Installation
+## 1. Reader
 
-To install the required packages, do the following steps:
+`reader.py` file defines Reader class, which requires `data_type` and `path` as the inputs for its object.
+It first checks if type of `data_type` and `path` are correct. If yes, based on the `data_type`, it reads the data and returns the data and labels to be distributed.
 
-  1. Go to the directory where requirements.txt is located.
-  2. Activate your virtualenv.
-  3. Run following command in your shell: 
-    ```
-    pip install -r requirements.txt
-    ```
+## 2. Converter
 
-## 1. Converter
-
-In the `converter.py` file, we defined a class of converter, which requires `data_type` and `path`.
-It reads the data with `read_data` function. First check if type of `data_type` and `path` are correct. If yes, based on the `data_type`, it reads the data and returns the data and labels in tensorflow format
-
-## 2. Parameters
-
-In the `select_params.py` file, we defined all the different functions to distribute the data, described in tutorial section here:
+`converter.py` distributes the data using `distributor.py` file, described in tutorial section here, given its parameters. It returns ClientData data type.
 
 https://github.com/Yasaman-A/federated-learning-tools/tree/library
 
-As well as splitting them after checking the required types and inputs.
 
 ## 3. Run
 

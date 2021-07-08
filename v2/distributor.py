@@ -3,6 +3,7 @@ from random import randrange
 import time
 from sklearn.model_selection import train_test_split
 import numpy as np
+import warnings
 
 
 class Distribute:
@@ -11,11 +12,11 @@ class Distribute:
         self.data = data
         self.label = label
         self.selected_feature = label
-        self.type = 'niid'
+        self.type = 'iid'
         self.client_no = 10
         self.data_sample_fraction = 0.1
-        self.min_user_number = 100
-        self.max_user_number = 1000
+        self.min_user_number = 10
+        self.max_user_number = 20
         self.train_data_fraction = 0.9
         self.random_sampling_seed = 4
         self.random_split_seed = 1
@@ -55,7 +56,6 @@ class Distribute:
         return glist, glabel
 
     def _iid(self, **kwargs):
-
         number_of_clients = kwargs.get('number_of_clients')
         if number_of_clients:
             return self._iid_clint(number_of_clients)
@@ -92,11 +92,11 @@ class Distribute:
                                      'is less than total number of clients specified:', number_of_clients)
                 else:
                     data, label = self.__select_feature_text_client(min_user_number, max_user_number,
-                                                                     number_of_clients,
-                                                                     min_seen_labels, max_seen_labels)
+                                                                    number_of_clients,
+                                                                    min_seen_labels, max_seen_labels)
             else:
                 data, label = self.__select_feature_text_no_client(min_user_number, max_user_number,
-                                                                    min_seen_labels, max_seen_labels)
+                                                                   min_seen_labels, max_seen_labels)
 
         elif data_type == 'csv':
             if number_of_clients:
@@ -119,7 +119,7 @@ class Distribute:
         return data, label
 
     def distribute_data(self, **kwargs):
-        if kwargs.get('type', self.type) == 'iid':
+        if kwargs.get('dist_type', self.type) == 'iid':
             return self._iid(**kwargs)
         else:
             return self._niid(**kwargs)
@@ -143,19 +143,17 @@ class Distribute:
         grouped_data_label = []
 
         while remained_data:
-            random_selected_features = random.choices(unique_features, k=unique_feature_size)
+            random_selected_features = random.sample(unique_features, k=unique_feature_size)
 
             data_index = [i for i, e in enumerate(remained_label) if e in random_selected_features]
 
             selected_data = [remained_data[i] for i in data_index]
 
             if selected_data:
-                self.__shuffle(remained_data, remained_label)
-
                 rng = randrange(min_user_number, max_user_number)
                 user_size = len(selected_data) if rng > len(selected_data) else rng
 
-                random_selected_index = random.choices(data_index, k=user_size)
+                random_selected_index = random.sample(data_index, k=user_size)
 
                 random_selected_data = [remained_data[ind] for ind in random_selected_index]
                 random_selected_labels = [remained_label[ind] for ind in random_selected_index]
@@ -193,18 +191,17 @@ class Distribute:
 
         while remained_data and g_size > 0:
 
-            random_selected_features = random.choices(unique_features, k=unique_feature_size)
+            random_selected_features = random.sample(unique_features, k=unique_feature_size)
 
             data_index = [i for i, e in enumerate(remained_label) if e in random_selected_features]
 
             selected_data = [remained_data[i] for i in data_index]
 
             if selected_data:
-                self.__shuffle(remained_data, remained_label)
 
                 rng = randrange(min_user_number, max_user_number)
                 user_size = len(selected_data) if rng > len(selected_data) else rng
-                random_selected_index = random.choices(data_index, k=user_size)
+                random_selected_index = random.sample(data_index, k=user_size)
 
                 if g_size != 1:
 
@@ -223,7 +220,9 @@ class Distribute:
                 remained_label = [x for i, x in enumerate(remained_label) if i not in random_selected_index]
 
                 g_size -= 1
-
+        if g_size != 0:
+            warnings.warn(
+                f"Total number of clients: {number_of_clients} cannot be reached using random choices made by program. Total number of clients are: {number_of_clients - g_size}")
 
         return grouped_data, grouped_data_label
 
@@ -246,19 +245,17 @@ class Distribute:
         grouped_data_label = []
 
         while remained_data:
-            random_selected_features = random.choices(unique_features, k=unique_feature_size)
+            random_selected_features = random.sample(unique_features, k=unique_feature_size)
 
             data_index = [i for i, e in enumerate(remained_label) if e in random_selected_features]
 
             selected_data = [remained_data[i] for i in data_index]
 
             if selected_data:
-                self.__shuffle(remained_data, remained_label)
-
                 rng = randrange(min_user_number, max_user_number)
                 user_size = len(selected_data) if rng > len(selected_data) else rng
 
-                random_selected_index = random.choices(data_index, k=user_size)
+                random_selected_index = random.sample(data_index, k=user_size)
 
                 random_selected_data = [remained_data[ind] for ind in random_selected_index]
                 random_selected_labels = [remained_label[ind] for ind in random_selected_index]
@@ -297,18 +294,17 @@ class Distribute:
 
         while remained_data and g_size > 0:
 
-            random_selected_features = random.choices(unique_features, k=unique_feature_size)
+            random_selected_features = random.sample(unique_features, k=unique_feature_size)
 
             data_index = [i for i, e in enumerate(remained_label) if e in random_selected_features]
 
             selected_data = [remained_data[i] for i in data_index]
 
             if selected_data:
-                self.__shuffle(remained_data, remained_label)
 
                 rng = randrange(min_user_number, max_user_number)
                 user_size = len(selected_data) if rng > len(selected_data) else rng
-                random_selected_index = random.choices(data_index, k=user_size)
+                random_selected_index = random.sample(data_index, k=user_size)
 
                 if g_size != 1:
 
@@ -328,11 +324,17 @@ class Distribute:
 
                 g_size -= 1
 
+        if g_size != 0:
+            warnings.warn(
+                f"Total number of clients: {number_of_clients} cannot be reached using random choices made by program. Total number of clients are: {number_of_clients - g_size}")
         return grouped_data, grouped_data_label
 
     def __select_feature_csv_no_client(self, feature_column,
                                        min_seen_labels, max_seen_labels,
                                        min_user_number, max_user_number):
+
+        if None in [item[feature_column] for item in self.data]:
+            raise ValueError('Selected feature should not have any null values. Select another feature column')
 
         unique_features = list(set([item[feature_column] for item in self.data]))
         max_feature_len = len(unique_features)
@@ -350,9 +352,9 @@ class Distribute:
         remained_label = self.label
 
         while remained_data:
-            random_selected_features = random.choices(unique_features, k=unique_feature_size)
+            random_selected_features = random.sample(unique_features, k=unique_feature_size)
 
-            data_index = [i for i, x in enumerate(remained_data) if x[feature_column] in random_selected_features]
+            data_index = [i for i, x in enumerate(remained_label) if x[feature_column] in random_selected_features]
             selected_data = [remained_data[i] for i in data_index]
 
             if selected_data:
@@ -376,6 +378,9 @@ class Distribute:
                                     min_user_number, max_user_number,
                                     number_of_clients):
 
+        if None in [item[feature_column] for item in self.data]:
+            raise ValueError('Selected feature should not have any null values. Select another feature column')
+
         unique_features = list(set([item[feature_column] for item in self.data]))
         max_feature_len = len(unique_features)
 
@@ -395,9 +400,11 @@ class Distribute:
         remained_data = self.data
         remained_label = self.label
 
-        while remained_data and number_of_clients > 0:
+        g_size = number_of_clients
 
-            random_selected_features = random.choices(unique_features, k=unique_feature_size)
+        while remained_data and g_size > 0:
+
+            random_selected_features = random.sample(unique_features, k=unique_feature_size)
 
             data_index = [i for i, x in enumerate(remained_data) if x[feature_column] in random_selected_features]
             selected_data = [remained_data[i] for i in data_index]
@@ -406,14 +413,14 @@ class Distribute:
 
                 rng = randrange(min_user_number, max_user_number)
                 user_size = len(selected_data) if rng > len(selected_data) else rng
-                random_selected_index = random.choices(data_index, k=user_size)
+                random_selected_index = random.sample(data_index, k=user_size)
 
-                if number_of_clients != 1:
+                if g_size != 1:
 
                     random_selected_data = [remained_data[ind] for ind in random_selected_index]
                     random_selected_labels = [remained_label[ind] for ind in random_selected_index]
 
-                elif number_of_clients == 1:
+                elif g_size == 1:
                     random_selected_data = remained_data
                     random_selected_labels = remained_label
 
@@ -423,7 +430,11 @@ class Distribute:
                 remained_data = [x for i, x in enumerate(remained_data) if i not in random_selected_index]
                 remained_label = [x for i, x in enumerate(remained_label) if i not in random_selected_index]
 
-                number_of_clients -= 1
+                g_size -= 1
+
+        if g_size != 0:
+            warnings.warn(
+                f"Total number of clients: {number_of_clients} cannot be reached using random choices made by program. Total number of clients are: {number_of_clients - g_size}")
 
         return grouped_data, grouped_data_label
 

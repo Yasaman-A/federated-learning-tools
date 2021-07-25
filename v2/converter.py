@@ -10,6 +10,7 @@ def convert_to_client_data(data, labels, data_type, **kwargs):
 
     distributed_data, distributed_label = distributor_obj.distribute_data(data_type=data_type, **kwargs)
 
+
     client_train_dataset = collections.OrderedDict()
 
     for i in range(len(distributed_data)):
@@ -20,5 +21,7 @@ def convert_to_client_data(data, labels, data_type, **kwargs):
     print(f'Converting data to {len(distributed_data)} client data...')
 
     train_dataset = tff.simulation.datasets.TestClientData(client_train_dataset)
+
+    print(f'Data successfully converted to {len(distributed_data)} client data.')
 
     return train_dataset

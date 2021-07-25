@@ -53,6 +53,8 @@ class Reader:
         dataset = pd.read_csv(self.path, dtype=str)
         dataset.fillna('', inplace=True)
 
+        print(f'Total number of rows:{dataset.shape[0]}')
+
         return dataset[list(dataset.iloc[:,:columns-1])].values.tolist(), list(dataset.iloc[:, columns-1])
 
     def _read_csv_(self):
@@ -61,7 +63,7 @@ class Reader:
                 f = open(self.path, 'r')
                 reader1, reader2 = itertools.tee(csv.reader(f, delimiter=','))
                 columns = len(next(reader1))
-                print(f"last csv column is considered as the label. Total number of columns:{columns}")
+                print(f"Last csv column is considered as the label. Total number of columns:{columns}")
                 return self._read_text_csv_(columns)
 
             elif self.data_type in ['image', 'text']:

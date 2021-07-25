@@ -344,12 +344,12 @@ class Distribute:
 
           grouped_data_label.append(selected_label)
           grouped_data.append(selected_data)
-
         return grouped_data, grouped_data_label
 
     def __select_feature_csv_no_client(self, feature_column,
                                        min_seen_labels, max_seen_labels,
                                        min_user_number, max_user_number):
+
         if '' in [item[feature_column] for item in self.data]:
           raise ValueError('Selected feature should not have any null values. Select another feature column')
 
@@ -376,7 +376,7 @@ class Distribute:
         while remained_data:
             random_selected_features = random.sample(unique_features, k=unique_feature_size)
 
-            data_index = [i for i, x in enumerate(remained_label) if x[feature_column] in random_selected_features]
+            data_index = [i for i, x in enumerate(remained_data) if x[feature_column] in random_selected_features]
             selected_data = [remained_data[i] for i in data_index]
 
             if selected_data:
@@ -399,8 +399,6 @@ class Distribute:
                                     min_seen_labels, max_seen_labels,
                                     min_user_number, max_user_number,
                                     number_of_clients):
-
-        print(set([item[feature_column] for item in self.data]))
 
         if '' in [item[feature_column] for item in self.data]:
           raise ValueError('Selected feature should not have any null values. Select another feature column')
@@ -435,7 +433,7 @@ class Distribute:
         data_dict={}
 
         for label, frequency in Counter(flatted_distributed_labels).items():
-          datapoints = [i for i, e in enumerate(self.label) if e == label]
+          datapoints = [i for i, x in enumerate(self.data) if x[feature_column] == label]
           data_dict[label] = partition_list(datapoints, frequency)
 
 
@@ -453,6 +451,7 @@ class Distribute:
               selected_label.append(client_label)
 
           flatted_selected_index = [item for sublist in selected_index for item in sublist]
+
           selected_data = [self.data[i] for i in flatted_selected_index]
 
           grouped_data_label.append(selected_label)
@@ -460,51 +459,6 @@ class Distribute:
 
         return grouped_data, grouped_data_label
 
-        # grouped_data = []
-        # grouped_data_label = []
-
-        # random_selected_data = []
-        # random_selected_labels = []
-
-        # remained_data = self.data
-        # remained_label = self.label
-
-        # g_size = number_of_clients
-
-        # while remained_data and g_size > 0:
-
-        #     random_selected_features = random.sample(unique_features, k=unique_feature_size)
-
-        #     data_index = [i for i, x in enumerate(remained_data) if x[feature_column] in random_selected_features]
-        #     selected_data = [remained_data[i] for i in data_index]
-
-        #     if selected_data:
-
-        #         rng = randrange(min_user_number, max_user_number)
-        #         user_size = len(selected_data) if rng > len(selected_data) else rng
-        #         random_selected_index = random.sample(data_index, k=user_size)
-
-        #         if g_size != 1:
-
-        #             random_selected_data = [remained_data[ind] for ind in random_selected_index]
-        #             random_selected_labels = [remained_label[ind] for ind in random_selected_index]
-
-        #         elif g_size == 1:
-        #             random_selected_data = remained_data
-        #             random_selected_labels = remained_label
-
-        #         grouped_data.append(random_selected_data)
-        #         grouped_data_label.append(random_selected_labels)
-
-        #         remained_data = [x for i, x in enumerate(remained_data) if i not in random_selected_index]
-        #         remained_label = [x for i, x in enumerate(remained_label) if i not in random_selected_index]
-
-        #         g_size -= 1
-
-        # if g_size != 0:
-        #   warnings.warn(f"Total number of clients: {number_of_clients} cannot be reached using random choices made by program. Total number of clients are: {number_of_clients - g_size}")
-
-        # return grouped_data, grouped_data_label
 
     def split_data(self, x, y, **kwargs):
         train_data_fraction = kwargs.get('train_data_fraction', self.train_data_fraction)
